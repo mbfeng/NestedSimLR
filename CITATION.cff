@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below (preferred-citation)."
+title: "NestedSimLR: code for Efficient Nested Simulation Experiment Design via the Likelihood Ratio Method"
+type: software
+authors:
+  - given-names: Ben Mingbin
+    family-names: Feng
+  - given-names: Eunhye
+    family-names: Song
+version: 1.0.0
+date-released: "2026-11-20"
+license: MIT
+repository-code: "https://github.com/mbfeng/NestedSimLR"
+preferred-citation:
+  type: article
+  title: "Efficient Nested Simulation Experiment Design via the Likelihood Ratio Method"
+  authors:
+    - given-names: Ben Mingbin
+      family-names: Feng
+    - given-names: Eunhye
+      family-names: Song
+  journal: "INFORMS Journal on Computing"
+  volume: 37
+  issue: 3
+  start: 723
+  end: 742
+  year: 2025
+  doi: "10.1287/ijoc.2022.0392"

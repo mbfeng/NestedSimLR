@@ -1,0 +1,1 @@
+optimal design budget = 2148, non-zero scenarios = 4

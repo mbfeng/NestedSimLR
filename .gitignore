@@ -1,0 +1,21 @@
+# Original 2024 code (published as github.com/INFORMSJoC/2022.0392)
+_original_Z/
+# Run logs
+logs/
+# Partial Table 1 reruns, merged into results/rerun_full by tools/assemble_rerun.R
+results/rerun_10000_smallM/
+results/rerun_10000_largeM/
+verify/verification_rerun_10000_smallM.csv
+# Default output folder of new reruns
+results/rerun/
+# R, editor and OS files
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+# Draft erratum, kept private by the authors
+ERRATUM.md
