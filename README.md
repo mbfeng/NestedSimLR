@@ -152,7 +152,8 @@ parts of the 10,000-run Table 1 rerun into `rerun_full`.
 ## Provenance of `results/published_run/`
 
 The 2024 code saved complete R workspaces (9.9 GB in total). `tools/extract_published_runs.R`
-reduced them to per-macro summaries (13 MB). The workspaces are kept offline by the authors.
+reduced them to per-macro summaries (13 MB), which reproduce every table and figure; the
+workspaces themselves were not kept (November 2026).
 
 * **Figure 2, Table 1:** the 10,000-macro runs reported in the paper.
 * **Tables 2–3:** the run reported in the paper was **not kept**. The summaries come from a run of
@@ -223,6 +224,9 @@ script does), or every parallel worker starts one BLAS thread per core.
   with `# --` bullets and formulas), trailing comments on assignments, explicit `return()`. No
   change to any result: the small runs of all three simulation scripts are identical before and
   after, `tests/run_tests.R` passes and the published-run verification is unchanged.
+
+* **2026-11 (v1.1.1)** Provenance note: the original 2024 workspaces were not kept; the
+  summaries in `results/published_run/` are the record of those runs.
 
 ## License
 
