@@ -1,5 +1,7 @@
 # Efficient Nested Simulation Experiment Design via the Likelihood Ratio Method — code
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24409919.svg)](https://doi.org/10.5281/zenodo.24409919)
+
 Code that reproduces every table and figure in Section 7 of
 
 > Feng, B. M., & Song, E. (2025). Efficient nested simulation experiment design via the likelihood
