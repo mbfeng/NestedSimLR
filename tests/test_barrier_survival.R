@@ -1,29 +1,35 @@
 ################################################################################
-# test_barrier_survival.R
-#
-# Checks the fast barrier-survival method of barrier_survive() (one random
-# number per path) against
-#   (1) the method of the original 2024 code (the Brownian-bridge minimum
-#       drawn on every time step, bridge_min() below), and
-#   (2) the closed-form price of the down-and-out put, barrier_dop_price().
-#
-#   Rscript tests/test_barrier_survival.R      (about a minute)
+# test_barrier_survival.R                                                      #
+#                                                                              #
+# Checks the fast barrier-survival method of barrier_survive() (one random     #
+# number per path) against                                                     #
+#   (1) the method of the original 2024 code (the Brownian-bridge minimum      #
+#       drawn on every time step, bridge_min() below), and                     #
+#   (2) the closed-form price of the down-and-out put, barrier_dop_price().    #
+#                                                                              #
+#   Rscript tests/test_barrier_survival.R      (about a minute)                #
 ################################################################################
 
 source(file.path("R", "utilities.R"))
 source_library("R")
 
-# The original code's method: on every step between grid points b1 and b2,
-# draw the minimum of the Brownian bridge,
-#   min = (b1 + b2 - sqrt((b1 - b2)^2 - 2 vol^2 dt log(U))) / 2,
-# and return the path minimum (one uniform U per step and path).
 bridge_min <- function(log_paths, vol, dt) {
+  # The original code's method: the minimum of the Brownian bridge on every
+  # step between grid points b1 and b2, one uniform U per step and path
+  # Inputs:
+  # -- log_paths: n_steps-by-n_paths matrix of log prices
+  # -- vol, dt: volatility and time step
+  # Output:
+  # -- vector of path minima (prices)
+  # formula: min = (b1 + b2 - sqrt((b1 - b2)^2 - 2 vol^2 dt log(U))) / 2
+
   step_start <- log_paths[-nrow(log_paths), , drop = FALSE]
   step_end <- log_paths[-1, , drop = FALSE]
   u <- matrix(runif(length(step_end)), nrow = nrow(step_end))
   step_min <- ((step_end + step_start) -
                  sqrt((step_end - step_start)^2 - 2 * vol^2 * dt * log(u))) / 2
-  exp(matrixStats::colMins(step_min))
+
+  return(exp(matrixStats::colMins(step_min)))
 }
 
 set.seed(2026)

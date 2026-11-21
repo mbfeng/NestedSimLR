@@ -1,35 +1,36 @@
 ################################################################################
-# verify_against_paper.R
-#
-# Compares the published values of Tables 1-4 (the estimates, not their
-# standard errors) and the design budgets quoted in Section 7 with the values
-# computed from a results folder.
-#
-#   Rscript verify_against_paper.R [results_dir] [mode]
-#     results_dir  results/published_run (default) or a rerun folder
-#     mode         exact  (default for results/published_run): the summaries
-#                         come from the same simulation runs as the paper, so
-#                         every entry must agree up to the printed rounding:
-#                         |x - v| <= h
-#                  mc     (default for reruns): agreement within Monte Carlo
-#                         error: z = (x - v) / sqrt(se_x^2 + se_v^2 + h^2 / 3)
-#                         must satisfy |z| <= 2.5. Here se_v, the Monte Carlo
-#                         error of the paper's own value, is se_x scaled to
-#                         the paper's number of macro runs.
-#
-# x = computed value, se_x its standard error, v = the paper's value, and
-# h = half a unit in the last printed digit of v. Times (CPU seconds) depend
-# on the computer and are not tested.
-#
-# Status of each check:
-#   ok            agrees
-#   heavy-tailed  disagrees, but the worst 1% of macro runs give more than
-#                 half of the MSE, so the MSE and its SE are unreliable
-#   ok (KS)       disagrees, but the per-macro estimates have the same
-#                 distribution as the paper's run (Kolmogorov-Smirnov p >= 0.01)
-#   known         Tables 2-3 in exact mode: the published run of Tables 2-3 was
-#                 not kept (README, Provenance)
-#   UNEXPECTED    anything else
+# verify_against_paper.R                                                       #
+#                                                                              #
+# Compares the published values of Tables 1-4 (the estimates, not their        #
+# standard errors) and the design budgets quoted in Section 7 with the values  #
+# computed from a results folder.                                              #
+#                                                                              #
+#   Rscript verify_against_paper.R [results_dir] [mode]                        #
+#     results_dir  results/published_run (default) or a rerun folder           #
+#     mode         exact  (default for results/published_run): the summaries   #
+#                         come from the same simulation runs as the paper, so  #
+#                         every entry must agree up to the printed rounding:   #
+#                         |x - v| <= h                                         #
+#                  mc     (default for reruns): agreement within Monte Carlo   #
+#                         error: z = (x - v) / sqrt(se_x^2 + se_v^2 + h^2 / 3) #
+#                         must satisfy |z| <= 2.5. Here se_v, the Monte Carlo  #
+#                         error of the paper's own value, is se_x scaled to    #
+#                         the paper's number of macro runs.                    #
+#                                                                              #
+# x = computed value, se_x its standard error, v = the paper's value, and      #
+# h = half a unit in the last printed digit of v. Times (CPU seconds) depend   #
+# on the computer and are not tested.                                          #
+#                                                                              #
+# Status of each check:                                                        #
+#   ok            agrees                                                       #
+#   heavy-tailed  disagrees, but the worst 1% of macro runs give more than     #
+#                 half of the MSE, so the MSE and its SE are unreliable        #
+#   ok (KS)       disagrees, but the per-macro estimates have the same         #
+#                 distribution as the paper's run (Kolmogorov-Smirnov          #
+#                 p >= 0.01)                                                   #
+#   known         Tables 2-3 in exact mode: the published run of               #
+#                 Tables 2-3 was not kept (README, Provenance)                 #
+#   UNEXPECTED    anything else                                                #
 ################################################################################
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -70,9 +71,14 @@ KNOWN <- c(
   "table2/SNS/n_outer" = "published Tables 2-3 run not kept"
 )
 
-# Half a unit in the last printed digit, e.g. "0.185" -> 0.0005,
-# "2.29E-03" -> 0.000005, "8200.8" -> 0.05.
 half_unit <- function(printed) {
+  # Half a unit in the last printed digit (the paper's rounding error)
+  # Input:
+  # -- printed: the paper's value as text
+  # Output:
+  # -- half a unit in the last digit, e.g. "0.185" -> 0.0005,
+  #    "2.29E-03" -> 0.000005, "8200.8" -> 0.05
+
   printed <- toupper(printed)
   mantissa <- sub("E.*", "", printed)
   exponent <- 0
@@ -83,13 +89,24 @@ half_unit <- function(printed) {
   if (grepl("\\.", mantissa)) {
     decimals <- nchar(sub(".*\\.", "", mantissa))
   }
-  0.5 * 10^(exponent - decimals)
+
+  return(0.5 * 10^(exponent - decimals))
 }
 
-# Compare one computed value with the paper's printed value.
-# Returns a one-row data frame (see the status list at the top).
 check_entry <- function(item, design, quantity, computed, se, printed,
                         n_macro = NA, heavy_tailed = FALSE, ks_p = NA) {
+  # Compare one computed value with the paper's printed value
+  # Inputs:
+  # -- item, design, quantity: identify the entry (e.g., "table1", "optimal",
+  #    "VaR_M512")
+  # -- computed, se: computed value and its Monte Carlo standard error
+  # -- printed: the paper's value as text
+  # -- n_macro: number of macro runs behind the computed value
+  # -- heavy_tailed: TRUE if the worst 1% of macro runs dominate the MSE
+  # -- ks_p: p-value of the distribution check against the paper's run
+  # Output:
+  # -- data frame with one row (see the status list at the top)
+
   paper <- as.numeric(printed)
   h <- half_unit(printed)
   z <- NA
@@ -129,14 +146,16 @@ check_entry <- function(item, design, quantity, computed, se, printed,
   } else {
     status <- "UNEXPECTED"
   }
-  data.frame(item = item, design = design, quantity = quantity,
-             paper = printed, computed = signif(computed, 6),
-             se = signif(se, 3), z = round(z, 2), status = status, note = note)
+
+  return(data.frame(item = item, design = design, quantity = quantity,
+                    paper = printed, computed = signif(computed, 6),
+                    se = signif(se, 3), z = round(z, 2), status = status,
+                    note = note))
 }
 
 checks <- list()
 
-#--- Table 1 and the Section 7.1 text ------------------------------------------------
+#-- Table 1 and the Section 7.1 text
 if (file.exists(file.path(results_dir, "sec71_table1_per_macro.csv.gz"))) {
   table1_computed <- table1(results_dir)
   table1_published <- table1(published_dir)
@@ -195,7 +214,7 @@ if (file.exists(file.path(results_dir, "sec71_fig2_design.txt"))) {
     "text71", "optimal", "budget_M1000", budget, 0, "2148")
 }
 
-#--- Tables 2 and 3 ------------------------------------------------------------------
+#-- Tables 2 and 3
 if (file.exists(file.path(results_dir, "sec72_per_macro.csv"))) {
   table2_computed <- table2(results_dir)
   table3_computed <- table3(results_dir)
@@ -220,7 +239,7 @@ if (file.exists(file.path(results_dir, "sec72_per_macro.csv"))) {
   }
 }
 
-#--- Table 4 and the Section 7.3 text ------------------------------------------------
+#-- Table 4 and the Section 7.3 text
 if (file.exists(file.path(results_dir, "sec73_table4_per_macro.csv.gz"))) {
   table4_computed <- table4(results_dir)
   for (i in which(paper_values$item == "table4")) {
@@ -249,7 +268,7 @@ if (file.exists(file.path(results_dir, "sec73_table4_per_macro.csv.gz"))) {
   }
 }
 
-#--- Report ----------------------------------------------------------------------------
+#-- Report
 report <- stack_rows(checks)
 label <- basename(normalizePath(results_dir))
 write.csv(report, file.path("verify", paste0("verification_", label, ".csv")),

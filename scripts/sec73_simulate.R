@@ -1,20 +1,19 @@
 ################################################################################
-# sec73_simulate.R  --  Section 7.3, newsvendor IUQ: run the simulations
-#
-# Writes summary files (same format as results/published_run/):
-#   <out_dir>/sec73_table4_per_macro.csv.gz  CrI coverage and width per macro run
-#   <out_dir>/sec73_table4_budgets.csv       optimal budget per macro run
-#   <out_dir>/sec73_fig3a_var_ratio.csv      Figure 3(a): V(SNS) / V(optimal)
-#   <out_dir>/sec73_fig3b_budgets.csv        Figure 3(b): optimal budget vs M
-#
-# Usage (from the Code/ folder):
-#   Rscript scripts/sec73_simulate.R [part] [n_cores] [out_dir]
-#     part     table4 | fig3a | fig3b | all (default all)
-#
-# The posterior of lambda, the 10^6 posterior draws used to evaluate CrI
-# coverage, and the fixed scenarios of Figure 3(a) are drawn after
-# set.seed(2020) exactly as in the original code, so they are identical to
-# the paper's. Macro runs use their own random-number streams (run_macros()).
+# sec73_simulate.R                                                             #
+# Simulations of Section 7.3 (newsvendor IUQ) of the paper                     #
+# Writes summary files (same format as results/published_run/) to out_dir:     #
+# -- sec73_table4_per_macro.csv.gz: Table 4, CrI coverage and width per        #
+#    macro run                                                                 #
+# -- sec73_table4_budgets.csv: optimal budget per macro run                    #
+# -- sec73_fig3a_var_ratio.csv: Figure 3(a), V(SNS) / V(optimal)               #
+# -- sec73_fig3b_budgets.csv: Figure 3(b), optimal budget vs M                 #
+# Usage (from the Code/ folder):                                               #
+#   Rscript scripts/sec73_simulate.R [part] [n_cores] [out_dir]                #
+# -- part: table4 | fig3a | fig3b | all (default all)                          #
+# The posterior of lambda, the 10^6 posterior draws used to evaluate CrI       #
+# coverage, and the fixed scenarios of Figure 3(a) are drawn after             #
+# set.seed(2020) exactly as in the original code, so they are identical to     #
+# the paper's. Macro runs use their own random-number streams (run_macros()).  #
 ################################################################################
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -32,7 +31,7 @@ TARGET_ESS <- 1000  # N
 N_MACRO <- 1000
 CRI_LEVELS <- c(0.90, 0.95, 0.99)
 
-#--- Table 4 -----------------------------------------------------------------------
+#-- Table 4
 if (part %in% c("all", "table4")) {
   params <- newsvendor_setup()                        # set.seed(2020), data
   lambda_true <- newsvendor_draw_lambda(1e6, params)  # next draws, same stream
@@ -40,7 +39,14 @@ if (part %in% c("all", "table4")) {
   rm(lambda_true)
 
   one_macro_run <- function(k) {
-    lambda <- newsvendor_draw_lambda(N_OUTER, params)
+    # One macro run: new posterior draws, all designs, their CrIs
+    # Input:
+    # -- k: index of the macro replication
+    # Output: a list of 2 items
+    # -- rows: data frame of CrIs, one row per design and level
+    # -- budget: the optimal design's budget
+
+    lambda <- newsvendor_draw_lambda(N_OUTER, params) # outer scenarios
     design <- newsvendor_design(lambda, TARGET_ESS)
     budget <- design$budget
     estimates <- list()
@@ -58,7 +64,7 @@ if (part %in% c("all", "table4")) {
       cri <- newsvendor_cri(estimates[[design_name]], true_sorted, CRI_LEVELS)
       rows[[design_name]] <- data.frame(design = design_name, macro = k, cri)
     }
-    list(rows = stack_rows(rows), budget = budget)
+    return(list(rows = stack_rows(rows), budget = budget))
   }
   start <- Sys.time()
   results <- run_macros(N_MACRO, one_macro_run, seed = 73001)
@@ -79,13 +85,15 @@ if (part %in% c("all", "table4")) {
             file.path(out_dir, "sec73_table4_budgets.csv"), row.names = FALSE)
 }
 
-#--- Figure 3(a): variance ratio at a fixed set of scenarios ------------------------
+#-- Figure 3(a): variance ratio at a fixed set of scenarios
 if (part %in% c("all", "fig3a")) {
   params <- newsvendor_setup()
   lambda <- newsvendor_draw_lambda(N_OUTER, params) # the paper's scenarios
   design <- newsvendor_design(lambda, TARGET_ESS)
   one_macro_run <- function(k) {
-    newsvendor_optimal(lambda, design, params)
+    # One macro run of the optimal design at the fixed scenarios
+
+    return(newsvendor_optimal(lambda, design, params))
   }
   start <- Sys.time()
   results <- run_macros(N_MACRO, one_macro_run, seed = 73002)
@@ -105,7 +113,7 @@ if (part %in% c("all", "fig3a")) {
             file.path(out_dir, "sec73_fig3a_var_ratio.csv"), row.names = FALSE)
 }
 
-#--- Figure 3(b): growth of the optimal budget with M = N --------------------------
+#-- Figure 3(b): growth of the optimal budget with M = N
 if (part %in% c("all", "fig3b")) {
   params <- newsvendor_setup()
   m_values <- (1:10) * 1000
@@ -132,8 +140,10 @@ if (part %in% c("all", "fig3b")) {
     workers <- max(1, min(n_cores, floor(memory_budget / (32 * n_outer^2))))
     setup_parallel(workers)
     one_macro_run <- function(k) {
+      # The optimal budget for one set of n_outer posterior draws
+
       lambda <- newsvendor_draw_lambda(n_outer, params)
-      newsvendor_design(lambda, target_ess = n_outer)$budget
+      return(newsvendor_design(lambda, target_ess = n_outer)$budget)
     }
     start <- Sys.time()
     results <- run_macros(n_repetitions, one_macro_run, seed = 73100 + case)

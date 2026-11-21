@@ -1,36 +1,52 @@
 ################################################################################
-# tables.R
-#
-# Tables 1-4 of the paper (and the numbers quoted in the text of Section 7),
-# computed from the summary files in a results folder (results/published_run/
-# or a rerun folder). Every entry comes with its Monte Carlo standard error,
-# which verify_against_paper.R uses.
+# tables.R                                                                     #
+# Tables 1-4 of the paper (and the numbers quoted in the text of Section 7),   #
+# computed from the summary files in a results folder (results/published_run/  #
+# or a rerun folder); every entry comes with its Monte Carlo standard error,   #
+# which verify_against_paper.R uses                                            #
 ################################################################################
 
-# Read one summary file (CSV, possibly gzipped) from a results folder.
+# ===== Reading summary files
 read_summary <- function(results_dir, file_name) {
-  read.csv(file.path(results_dir, file_name), check.names = FALSE,
-           stringsAsFactors = FALSE)
+  # Read one summary file (CSV, possibly gzipped) from a results folder
+  # Inputs:
+  # -- results_dir: results folder
+  # -- file_name: name of the file
+  # Output:
+  # -- data frame
+
+  return(read.csv(file.path(results_dir, file_name), check.names = FALSE,
+                  stringsAsFactors = FALSE))
 }
 
-# The truth file (columns measure, value) as a named vector.
 read_truth <- function(results_dir, file_name) {
+  # Read a truth file (columns measure, value) as a named vector
+  # Inputs:
+  # -- results_dir, file_name: as in read_summary()
+  # Output:
+  # -- named vector of true values
+
   truth_table <- read_summary(results_dir, file_name)
   truth <- truth_table$value
   names(truth) <- truth_table$measure
-  truth
+
+  return(truth)
 }
 
 RISK_MEASURES <- c("VaR", "indicator", "hockeystick", "square")
 
-#--- Table 1 -------------------------------------------------------------------
-
-# Table 1: MSE (and its standard error) of the four risk measures, for every
-# number of scenarios M and every design. One row per (M, design, measure).
+# ===== Table 1
 table1 <- function(results_dir) {
+  # Table 1: MSE (and its standard error) of the four risk measures, for every
+  # number of scenarios M and every design
+  # Input:
+  # -- results_dir: results folder
+  # Output:
+  # -- data frame, one row per (M, design, measure)
+
   per_macro <- read_summary(results_dir, "sec71_table1_per_macro.csv.gz")
   truth <- read_truth(results_dir, "sec71_table1_truth.csv")
-  rows <- list()
+  rows <- list() # placeholder, one data frame per (M, design)
   for (m in sort(unique(per_macro$M))) {
     for (design in unique(per_macro$design)) {
       runs <- per_macro[per_macro$M == m & per_macro$design == design, ]
@@ -40,14 +56,19 @@ table1 <- function(results_dir) {
     }
   }
   result <- stack_rows(rows)
-  result[order(result$measure, result$design, result$M), ]
+
+  return(result[order(result$measure, result$design, result$M), ])
 }
 
-#--- Tables 2 and 3 --------------------------------------------------------------
-
-# Table 2: simulation budget, number of outer scenarios at which inner
-# replications are run, and time per macro run, for each design.
+# ===== Tables 2 and 3
 table2 <- function(results_dir) {
+  # Table 2: simulation budget, number of outer scenarios at which inner
+  # replications are run, and time per macro run, for each design
+  # Input:
+  # -- results_dir: results folder
+  # Output:
+  # -- data frame, one row per design
+
   budgets <- read_summary(results_dir, "sec72_budgets_per_macro.csv")
   # regression: one inner replication at ceiling(budget) design points
   regression_budget <- ceiling(budgets$budget_optimal)
@@ -65,33 +86,39 @@ table2 <- function(results_dir) {
                    standard_error(regression_budget))
   )
 
-  # Time per macro run (wall-clock seconds). Reruns store
-  # the time of every macro run; the published run stored totals per seed.
+  #-- time per macro run (wall-clock seconds): reruns store the time of every
+  #-- macro run, the published run stored totals per seed
   result$cpu_seconds <- NA
   if (file.exists(file.path(results_dir, "sec72_cpu_times_per_macro.csv"))) {
     times <- read_summary(results_dir, "sec72_cpu_times_per_macro.csv")
-    for (i in seq_len(nrow(result))) {
+    for (i in 1:nrow(result)) {
       design_times <- times$seconds[times$design == result$design[i]]
       result$cpu_seconds[i] <- mean(design_times)
     }
   } else {
     times <- read_summary(results_dir, "sec72_cpu_times_per_seed.csv")
-    for (i in seq_len(nrow(result))) {
+    for (i in 1:nrow(result)) {
       is_design <- times$design == result$design[i]
       result$cpu_seconds[i] <- sum(times$sum_time[is_design]) /
         sum(times$n_macro[is_design])
     }
   }
   result$n_macro <- nrow(budgets)
-  result
+
+  return(result)
 }
 
-# Table 3: AMSE of the conditional means (average over the scenarios of the
-# squared error of mu^(theta_i)) and the MSEs of the nested statistics.
 table3 <- function(results_dir) {
+  # Table 3: AMSE of the conditional means (average over the scenarios of the
+  # squared error of mu^(theta_i)) and the MSEs of the nested statistics
+  # Input:
+  # -- results_dir: results folder
+  # Output:
+  # -- data frame, one row per (design, measure)
+
   per_macro <- read_summary(results_dir, "sec72_per_macro.csv")
   truth <- read_truth(results_dir, "sec72_truth.csv")
-  rows <- list()
+  rows <- list() # placeholder, one data frame per design
   for (design in sort(unique(per_macro$design))) {
     runs <- per_macro[per_macro$design == design, ]
     amse <- data.frame(measure = "AMSE", bias = NA, var = NA,
@@ -102,16 +129,21 @@ table3 <- function(results_dir) {
     rows[[length(rows) + 1]] <- data.frame(design = design,
                                            n_macro = nrow(runs), summary)
   }
-  stack_rows(rows)
+
+  return(stack_rows(rows))
 }
 
-#--- Table 4 and the numbers of Section 7.3 -------------------------------------
-
-# Table 4: average CrI coverage and width over the macro runs, with their
-# standard errors sd / sqrt(K) (K = number of macro runs).
+# ===== Table 4 and the numbers of Section 7.3
 table4 <- function(results_dir) {
+  # Table 4: average CrI coverage and width over the macro runs, with their
+  # standard errors sd / sqrt(K) (K = number of macro runs)
+  # Input:
+  # -- results_dir: results folder
+  # Output:
+  # -- data frame, one row per (design, level)
+
   per_macro <- read_summary(results_dir, "sec73_table4_per_macro.csv.gz")
-  rows <- list()
+  rows <- list() # placeholder, one data frame per (design, level)
   for (design in sort(unique(per_macro$design))) {
     for (level in sort(unique(per_macro$level))) {
       runs <- per_macro[per_macro$design == design & per_macro$level == level, ]
@@ -124,32 +156,47 @@ table4 <- function(results_dir) {
       )
     }
   }
-  stack_rows(rows)
+
+  return(stack_rows(rows))
 }
 
-# Numbers quoted in the text of Section 7.3: the optimal design's average
-# budget and its ratio to SNS+'s 10^6, and the variance ratios of Figure 3(a).
 text73 <- function(results_dir) {
+  # Numbers quoted in the text of Section 7.3
+  # Input:
+  # -- results_dir: results folder
+  # Output: a list
+  # -- budget_mean, budget_se, budget_ratio: the optimal design's average
+  #    budget, its standard error, and SNS+'s 10^6 divided by it
+  # -- ratio_mean, ratio_max, ratio_min: the variance ratios of Figure 3(a)
+
   budget <- read_summary(results_dir, "sec73_table4_budgets.csv")$budget_optimal
   ratio <- read_summary(results_dir, "sec73_fig3a_var_ratio.csv")$ratio
-  list(budget_mean = mean(budget), budget_se = standard_error(budget),
-       budget_ratio = 1e6 / mean(budget),
-       ratio_mean = mean(ratio), ratio_max = max(ratio), ratio_min = min(ratio))
+
+  return(list(budget_mean = mean(budget), budget_se = standard_error(budget),
+              budget_ratio = 1e6 / mean(budget),
+              ratio_mean = mean(ratio), ratio_max = max(ratio),
+              ratio_min = min(ratio)))
 }
 
-#--- Printing ---------------------------------------------------------------------
-
-# Rearrange a long table into the paper's layout: one row per value of
-# `row_column`, one column per value of `col_column`, entries from
-# `value_column` (rounded to `digits` significant digits).
+# ===== Printing
 format_wide <- function(table, value_column, row_column, col_column,
                         digits = 3) {
+  # Rearrange a long table into the paper's layout
+  # Inputs:
+  # -- table: data frame in long format
+  # -- value_column: column with the entries
+  # -- row_column, col_column: columns whose values become rows and columns
+  # -- digits: significant digits
+  # Output:
+  # -- data frame, one row per value of row_column, one column per value of
+  #    col_column
+
   row_values <- unique(table[[row_column]])
   col_values <- unique(table[[col_column]])
   wide <- data.frame(row_values)
   names(wide) <- row_column
   for (col_value in col_values) {
-    column <- numeric(length(row_values))
+    column <- numeric(length(row_values)) # placeholder
     for (r in seq_along(row_values)) {
       is_entry <- table[[row_column]] == row_values[r] &
         table[[col_column]] == col_value
@@ -157,5 +204,6 @@ format_wide <- function(table, value_column, row_column, col_column,
     }
     wide[[col_value]] <- column
   }
-  wide
+
+  return(wide)
 }

@@ -1,20 +1,19 @@
 ################################################################################
-# sec71_simulate.R  --  Section 7.1, single-asset ERM: run the simulations
-#
-# Writes summary files (same format as results/published_run/):
-#   <out_dir>/sec71_fig2_bands.csv          Figure 2: 2.5%/97.5% bands, means
-#   <out_dir>/sec71_fig2_design.txt         optimal budget for M = N = 1000
-#   <out_dir>/sec71_table1_per_macro.csv.gz Table 1: risk measures per macro run
-#   <out_dir>/sec71_table1_truth.csv        true risk measures (10^8 scenarios)
-#   <out_dir>/sec71_table1_budgets.csv      optimal budget for every M
-#
-# Usage (from the Code/ folder):
-#   Rscript scripts/sec71_simulate.R [part] [n_macro] [n_cores] [out_dir] [m_values]
-#     part      fig2 | table1 | truth | all            (default all)
-#     n_macro   number of macro runs                   (default 10000, as in the paper)
-#     n_cores   number of parallel workers             (default 1)
-#     out_dir   output folder                          (default results/rerun)
-#     m_values  table1 only: comma-separated values of M (default 128,256,...,4096)
+# sec71_simulate.R                                                             #
+# Simulations of Section 7.1 (single-asset ERM) of the paper                   #
+# Writes summary files (same format as results/published_run/) to out_dir:     #
+# -- sec71_fig2_bands.csv: Figure 2, 2.5%/97.5% bands and means                #
+# -- sec71_fig2_design.txt: optimal budget for M = N = 1000                    #
+# -- sec71_table1_per_macro.csv.gz: Table 1, risk measures per macro run       #
+# -- sec71_table1_truth.csv: true risk measures (10^8 scenarios)               #
+# -- sec71_table1_budgets.csv: optimal budget for every M                      #
+# Usage (from the Code/ folder):                                               #
+#   Rscript scripts/sec71_simulate.R [part] [n_macro] [n_cores] [out_dir] [M]  #
+# -- part: fig2 | table1 | truth | all (default all)                           #
+# -- n_macro: number of macro runs (default 10000, as in the paper)            #
+# -- n_cores: number of parallel workers (default 1)                           #
+# -- out_dir: output folder (default results/rerun)                            #
+# -- M: table1 only, comma-separated values of M (default 128,256,...,4096)    #
 ################################################################################
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -34,7 +33,7 @@ THRESHOLD <- 49     # threshold of the indicator, hockey-stick and square losses
 SEED_FIGURE2 <- 71001
 SEED_TABLE1 <- 71100 # + index of the value of M
 
-#--- Figure 2: M = N = 1000 -------------------------------------------------------
+#-- Figure 2: M = N = 1000
 if (part %in% c("all", "fig2")) {
   n_outer <- 1000
   theta <- single_asset_scenarios(n_outer, params)
@@ -43,11 +42,17 @@ if (part %in% c("all", "fig2")) {
   regression_points <- single_asset_scenarios(sizes$regression_points, params)
 
   one_macro_run <- function(k) {
-    list(
+    # One macro run: estimates of mu(theta_i) by three designs
+    # Input:
+    # -- k: index of the macro replication
+    # Output:
+    # -- list of three vectors of M estimates (optimal, SNS+, regression)
+
+    return(list(
       optimal = single_asset_optimal(theta, design, params),
       `SNS+` = single_asset_standard(theta, 1000, params),
       regression = single_asset_regression(theta, regression_points, params)
-    )
+    ))
   }
   start <- Sys.time()
   results <- run_macros(n_macro, one_macro_run, seed = SEED_FIGURE2)
@@ -76,7 +81,7 @@ if (part %in% c("all", "fig2")) {
              file.path(out_dir, "sec71_fig2_design.txt"))
 }
 
-#--- Table 1: M = N for several values of M ----------------------------------------
+#-- Table 1: M = N for several values of M
 if (part %in% c("all", "table1")) {
   # 128, 256, ..., 4096 as in the original code; the paper's Table 1 shows all
   # of them except M = 256.
@@ -96,17 +101,22 @@ if (part %in% c("all", "table1")) {
     theta_sns <- single_asset_scenarios(sizes$sns_outer, params)
     regression_points <- single_asset_scenarios(sizes$regression_points, params)
 
-    # One macro run: the four risk measures of each design (a 4 x 4 matrix,
-    # rows = designs in the order of `designs`).
     one_macro_run <- function(k) {
+      # One macro run: the four risk measures of each design
+      # Input:
+      # -- k: index of the macro replication
+      # Output:
+      # -- 4-by-4 matrix, rows = designs in the order of `designs`,
+      #    columns = risk measures
+
       optimal <- single_asset_optimal(theta, design, params)
       sns <- single_asset_standard(theta_sns, sizes$sns_inner, params)
       sns_plus <- single_asset_standard(theta, n_outer, params)
       regression <- single_asset_regression(theta, regression_points, params)
-      rbind(optimal = risk_measures(optimal, ALPHA, THRESHOLD),
-            SNS = risk_measures(sns, ALPHA, THRESHOLD),
-            `SNS+` = risk_measures(sns_plus, ALPHA, THRESHOLD),
-            regression = risk_measures(regression, ALPHA, THRESHOLD))
+      return(rbind(optimal = risk_measures(optimal, ALPHA, THRESHOLD),
+                   SNS = risk_measures(sns, ALPHA, THRESHOLD),
+                   `SNS+` = risk_measures(sns_plus, ALPHA, THRESHOLD),
+                   regression = risk_measures(regression, ALPHA, THRESHOLD)))
     }
     start <- Sys.time()
     results <- run_macros(n_macro, one_macro_run, seed = SEED_TABLE1 + case)
@@ -130,7 +140,7 @@ if (part %in% c("all", "table1")) {
             file.path(out_dir, "sec71_table1_budgets.csv"), row.names = FALSE)
 }
 
-#--- True risk measures from 10^8 scenarios (deterministic) ------------------------
+#-- True risk measures from 10^8 scenarios (deterministic)
 if (part %in% c("all", "truth")) {
   start <- Sys.time()
   truth <- single_asset_true_risks(ALPHA, THRESHOLD, params, n_true = 1e8)

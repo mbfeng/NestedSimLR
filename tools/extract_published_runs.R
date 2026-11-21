@@ -1,30 +1,23 @@
 ################################################################################
-# extract_published_runs.R
-#
-# One-off provenance script (run once, November 2026). It reads the large
-# .RData workspaces saved by the ORIGINAL 2024 code (kept offline, see
-# README) and writes the compact per-macro summaries in
-# results/published_run/. Those summaries are all that is needed to redraw
-# every table and figure of the paper, so the multi-GB workspaces are no
-# longer needed by the archive.
-#
-# Usage: Rscript tools/extract_published_runs.R <dir with original results> [part]
-#   <dir> is the folder with the original code's subfolders listed below;
-#   part is all (default), fig2, table1, tables23 or sec73.
-#
-# The original files and what they are:
-#   Section_7_1_SingleAssetERM/SingleAssetERM_1_1000Inner1000Outer10000Macro.RData
-#       Figure 2 (10,000 macro runs, M = N = 1000)
-#   Section_7_1_SingleAssetERM/SingleAssetERM_2_6Cases10000Macros.RData
-#       Table 1 (6 values of M, 10,000 macro runs)
-#   Section_7_2_MultiAssetERM/MultiAssetERM_10Stocks1000Outer40Macro60xxSeed.RData
-#       Tables 2-3, seeds 6001-6025 x 40 macro runs = 1,000 macro runs
-#   Section_7_3_Newsvendor/Newsvendor_1000Inner1000Outer1000Macro.RData
-#       Table 4
-#   Section_7_3_Newsvendor/Newsvendor_VarRatio_1000Inner1000Outer1000Macro.RData
-#       Figure 3(a)
-#   Section_7_3_Newsvendor/Newsvendor_SimBudgetGrowth.RData
-#       Figure 3(b)
+# extract_published_runs.R                                                     #
+# One-off provenance script (run once, November 2026). It reads the large      #
+# .RData workspaces saved by the ORIGINAL 2024 code and writes the compact     #
+# per-macro summaries in results/published_run/, which are all that is         #
+# needed to redraw every table and figure of the paper.                        #
+# Usage: Rscript tools/extract_published_runs.R <dir> [part]                   #
+# -- dir: folder with the original code's subfolders listed below              #
+# -- part: all (default), fig2, table1, tables23 or sec73                      #
+# The original files (in the folders Section_7_1_SingleAssetERM/,              #
+# Section_7_2_MultiAssetERM/ and Section_7_3_Newsvendor/) and what they are:   #
+# -- SingleAssetERM_1_1000Inner1000Outer10000Macro.RData: Figure 2             #
+#    (10,000 macro runs, M = N = 1000)                                         #
+# -- SingleAssetERM_2_6Cases10000Macros.RData: Table 1 (6 values of M,         #
+#    10,000 macro runs)                                                        #
+# -- MultiAssetERM_10Stocks1000Outer40Macro60xxSeed.RData: Tables 2-3,         #
+#    seeds 6001-6025 x 40 macro runs = 1,000 macro runs                        #
+# -- Newsvendor_1000Inner1000Outer1000Macro.RData: Table 4                     #
+# -- Newsvendor_VarRatio_1000Inner1000Outer1000Macro.RData: Figure 3(a)        #
+# -- Newsvendor_SimBudgetGrowth.RData: Figure 3(b)                             #
 ################################################################################
 
 args <- commandArgs(trailingOnly = TRUE)

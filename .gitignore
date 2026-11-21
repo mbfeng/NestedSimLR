@@ -17,5 +17,5 @@ results/rerun/
 .DS_Store
 Thumbs.db
 desktop.ini
-# Draft erratum, kept private by the authors
-ERRATUM.md
+# Private notes
+NOTES_PRIVATE.md

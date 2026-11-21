@@ -218,6 +218,12 @@ script does), or every parallel worker starts one BLAS thread per core.
     rerun with it and re-verified. Vectorizing SNS/SNS+ the same way was tested and gave no
     speed-up (1.0×), so they keep the 2024 order of random draws.
 
+* **2026-11 (v1.1.0)** Code restyled to the authors' own conventions: boxed file headers,
+  `# =====`/`#--` section markers, documentation inside every function (`# Inputs:`/`# Output:`
+  with `# --` bullets and formulas), trailing comments on assignments, explicit `return()`. No
+  change to any result: the small runs of all three simulation scripts are identical before and
+  after, `tests/run_tests.R` passes and the published-run verification is unchanged.
+
 ## License
 
 MIT (see [LICENSE](LICENSE)), as the IJOC snapshot. Data: none (all inputs are simulated).

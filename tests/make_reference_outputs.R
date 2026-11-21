@@ -1,23 +1,29 @@
 ################################################################################
-# make_reference_outputs.R
-#
-# Runs every library function on small inputs with fixed random seeds and
-# saves the outputs. tests/run_tests.R compares the current code's outputs
-# with the saved reference (tests/reference_outputs.rds), so that a change
-# to the code that changes any result is noticed.
-#
-#   Rscript tests/make_reference_outputs.R [output file]
-#     (default tests/reference_outputs.rds; only remake the reference when a
-#     change of results is intended)
+# make_reference_outputs.R                                                     #
+#                                                                              #
+# Runs every library function on small inputs with fixed random seeds and      #
+# saves the outputs. tests/run_tests.R compares the current code's outputs     #
+# with the saved reference (tests/reference_outputs.rds), so that a change     #
+# to the code that changes any result is noticed.                              #
+#                                                                              #
+#   Rscript tests/make_reference_outputs.R [output file]                       #
+#     (default tests/reference_outputs.rds; only remake the reference when a   #
+#     change of results is intended)                                           #
 ################################################################################
 
 make_reference_outputs <- function() {
-  out <- list()
+  # Run every library function on small inputs with fixed seeds
+  # Output:
+  # -- named list of the outputs, one element per check
+
+  out <- list() # placeholder for the outputs
   seed <- function() {
+    # Fix the random numbers (R's default generator)
+
     set.seed(1, kind = "Mersenne-Twister", normal.kind = "Inversion")
   }
 
-  #--- lr_design.R
+  #-- lr_design.R
   seed()
   a <- sort(rnorm(40, 4.6, 0.3))
   out$psi_lognormal <- psi_lognormal(a, 0.2)
@@ -33,7 +39,7 @@ make_reference_outputs <- function() {
   x_poisson <- matrix(rpois(14, 5), 7, 2)
   out$log_lr_poisson <- log_lr_poisson(x_poisson, lambda, lambda[2, ])
 
-  #--- option_pricing.R
+  #-- option_pricing.R
   s <- c(60, 90, 100, 120, 150)
   out$bs <- list(bs_price(s, 100, 0.02, 0.3, 1.5, "c"),
                  bs_price(s, 100, 0.02, 0.3, 1.5, "p"),
@@ -52,7 +58,7 @@ make_reference_outputs <- function() {
   out$barrier_survive <- barrier_survive(paths, c(85, 95, 105), 0.35, 1 / 52,
                                          needed = matrix(TRUE, 300, 3))
 
-  #--- risk_measures.R
+  #-- risk_measures.R
   seed()
   values <- matrix(rnorm(300, 48, 3), 100, 3)
   out$risk <- risk_measures(values[, 1], 0.99, 49)
@@ -60,7 +66,7 @@ make_reference_outputs <- function() {
   out$error_summary <- error_summary(
     out$risk_by_macro, c(VaR = 50, indicator = 0.4, hockeystick = 1, square = 3))
 
-  #--- Section 7.1
+  #-- Section 7.1
   params <- single_asset_params()
   theta <- single_asset_scenarios(128, params)
   out$sa_true <- single_asset_true_value(theta, params)
@@ -81,7 +87,7 @@ make_reference_outputs <- function() {
   out$sa_true_risks <- single_asset_true_risks(0.99, 49, params, n_true = 1e5,
                                                chunk = 3e4)
 
-  #--- Section 7.2
+  #-- Section 7.2
   params <- multi_asset_params()
   out$ma_sigma <- params$sigma
   seed()
@@ -104,7 +110,7 @@ make_reference_outputs <- function() {
   out$ma_sns <- sns[c("estimate", "truth", "n_outer", "n_inner")]
   out$ma_stats <- multi_asset_stats(out$ma_true)
 
-  #--- Section 7.3
+  #-- Section 7.3
   params <- newsvendor_setup()
   out$nv_posterior <- cbind(params$posterior_rate, params$posterior_shape)
   lambda <- newsvendor_draw_lambda(50, params) # continues the set.seed(2020) stream
@@ -125,7 +131,7 @@ make_reference_outputs <- function() {
   out$nv_reg <- newsvendor_regression(lambda, 60, params)
   out$nv_cri <- newsvendor_cri(out$nv_opt, sort(out$nv_true))
 
-  #--- tables.R, from the published run
+  #-- tables.R, from the published run
   published <- file.path("results", "published_run")
   out$table1 <- table1(published)
   out$table2 <- table2(published)
@@ -133,16 +139,19 @@ make_reference_outputs <- function() {
   out$table4 <- table4(published)
   out$text73 <- text73(published)
 
-  #--- utilities.R: the same results on 1 and 2 workers
+  #-- utilities.R: the same results on 1 and 2 workers
   one_macro_run <- function(k) {
-    rnorm(2)
+    # Two random numbers from the stream of macro run k
+
+    return(rnorm(2))
   }
   setup_parallel(1)
   out$macros1 <- run_macros(4, one_macro_run, seed = 9)
   setup_parallel(2)
   out$macros2 <- run_macros(4, one_macro_run, seed = 9)
   setup_parallel(1)
-  out
+
+  return(out)
 }
 
 if (sys.nframe() == 0) { # run as a script, not sourced

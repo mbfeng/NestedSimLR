@@ -1,17 +1,20 @@
 ################################################################################
-# figures.R
-#
-# Figures 1-3 of the paper, drawn with ggplot2 in the style of the original
-# figures, from the summary files in a results folder.
+# figures.R                                                                    #
+# Figures 1-3 of the paper, drawn with ggplot2 in the style of the original    #
+# figures, from the summary files in a results folder                          #
 ################################################################################
 
-# Figure 1(a): density of the outer scenarios S_tau.
-# Figure 1(b): the conditional mean mu(theta). Closed form, no simulation.
 figure1 <- function(out_dir) {
-  library(ggplot2)
+  # Figure 1(a): density of the outer scenarios S_tau; Figure 1(b): the
+  # conditional mean mu(theta); closed form, no simulation
+  # Input:
+  # -- out_dir: folder for the PDF files
+  # Output: none (writes Figure1a_OuterDist.pdf, Figure1b_ConditionalMean.pdf)
+
+  library(ggplot2) # plotting
   params <- single_asset_params()
   probabilities <- seq(0.001, 0.999, by = 0.001)
-  log_mean <- log(params$s0) + params$meanlog_out
+  log_mean <- log(params$s0) + params$meanlog_out # log-mean of S_tau
   theta <- qlnorm(probabilities, log_mean, params$sdlog_out)
   curves <- data.frame(
     theta = theta,
@@ -35,11 +38,16 @@ figure1 <- function(out_dir) {
          width = 6, height = 4)
 }
 
-# Figure 2: 2.5% and 97.5% quantiles (over the macro runs) of the estimated
-# mu(theta) at every scenario, for three designs, and the true mu(theta).
-# Figure 2(b) zooms into 80 <= theta <= 120.
 figure2 <- function(results_dir, out_dir) {
-  library(ggplot2)
+  # Figure 2: 2.5% and 97.5% quantiles (over the macro runs) of the estimated
+  # mu(theta) at every scenario, for three designs, and the true mu(theta);
+  # Figure 2(b) zooms into 80 <= theta <= 120
+  # Inputs:
+  # -- results_dir: folder with sec71_fig2_bands.csv
+  # -- out_dir: folder for the PDF files
+  # Output: none (writes Figure2a_Bands.pdf, Figure2b_Bands_Zoomed.pdf)
+
+  library(ggplot2) # plotting
   bands <- read.csv(file.path(results_dir, "sec71_fig2_bands.csv"))
   bands$design <- factor(bands$design, levels = c("optimal", "SNS+", "regression"))
   legend_labels <- c("Opt. Design", "SNS+       ", "Regression ")
@@ -72,12 +80,17 @@ figure2 <- function(results_dir, out_dir) {
          width = 7, height = 5)
 }
 
-# Figure 3(a): histogram of the variance ratios V(SNS) / V(optimal) at 1,000
-# fixed scenarios (dashed line: their mean).
-# Figure 3(b): the optimal design's budget against M (= N), averaged over the
-# macro runs.
 figure3 <- function(results_dir, out_dir) {
-  library(ggplot2)
+  # Figure 3(a): histogram of the variance ratios V(SNS) / V(optimal) at 1,000
+  # fixed scenarios (dashed line: their mean); Figure 3(b): the optimal
+  # design's budget against M (= N), averaged over the macro runs
+  # Inputs:
+  # -- results_dir: folder with sec73_fig3a_var_ratio.csv and
+  #    sec73_fig3b_budgets.csv
+  # -- out_dir: folder for the PDF files
+  # Output: none (writes Figure3a_VarRatio.pdf, Figure3b_SimBudgetGrowth.pdf)
+
+  library(ggplot2) # plotting
   ratios <- read.csv(file.path(results_dir, "sec73_fig3a_var_ratio.csv"))
   ratio_plot <- ggplot(ratios, aes(ratio)) +
     geom_histogram(bins = 50, colour = "black", fill = "red", alpha = 0.4) +
@@ -89,8 +102,8 @@ figure3 <- function(results_dir, out_dir) {
          width = 7, height = 5)
 
   budgets <- read.csv(file.path(results_dir, "sec73_fig3b_budgets.csv"))
-  m_values <- sort(unique(budgets$M))
-  average_budget <- numeric(length(m_values))
+  m_values <- sort(unique(budgets$M)) # values of M
+  average_budget <- numeric(length(m_values)) # placeholder
   for (i in seq_along(m_values)) {
     average_budget[i] <- mean(budgets$budget_optimal[budgets$M == m_values[i]])
   }

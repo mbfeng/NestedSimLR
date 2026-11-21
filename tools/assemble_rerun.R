@@ -1,13 +1,13 @@
 ################################################################################
-# assemble_rerun.R -- collect the November 2026 reruns into results/rerun_full
-#
-# Table 1 at 10,000 macro runs was run in two parts (M = 128-1024 in
-# results/rerun_10000_smallM, M = 2048-4096 in results/rerun_10000_largeM).
-# This script stacks them into results/rerun_full, which already holds the
-# Figure 2, Section 7.2 and Section 7.3 reruns, and draws the rerun figures
-# in figures/rerun_full/.
-#
-#   Rscript tools/assemble_rerun.R
+# assemble_rerun.R -- collect the November 2026 reruns into results/rerun_full #
+#                                                                              #
+# Table 1 at 10,000 macro runs was run in two parts (M = 128-1024 in           #
+# results/rerun_10000_smallM, M = 2048-4096 in results/rerun_10000_largeM).    #
+# This script stacks them into results/rerun_full, which already holds the     #
+# Figure 2, Section 7.2 and Section 7.3 reruns, and draws the rerun figures    #
+# in figures/rerun_full/.                                                      #
+#                                                                              #
+#   Rscript tools/assemble_rerun.R                                             #
 ################################################################################
 
 source(file.path("R", "utilities.R"))
